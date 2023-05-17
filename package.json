@@ -1,0 +1,18 @@
+{
+  "name": "starter-micro-api",
+  "version": "1.0.0",
+  "description": "Cyclic.sh micro api starter",
+  "main": "src/index.js",
+  "scripts": {
+    "decrypt": "env-cmd node src/cli.js decryptFile",
+    "encrypt": "env-cmd node src/cli.js encryptFile",
+    "start": "node src/index.js",
+    "test": "env-cmd jest"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "env-cmd": "^10.1.0",
+    "jest": "^29.5.0"
+  }
+}
