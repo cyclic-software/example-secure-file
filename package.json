@@ -6,13 +6,11 @@
   "scripts": {
     "decrypt": "env-cmd node src/cli.js decryptFile",
     "encrypt": "env-cmd node src/cli.js encryptFile",
-    "start": "node src/index.js",
-    "test": "env-cmd jest"
+    "start": "node src/index.js"
   },
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "env-cmd": "^10.1.0",
-    "jest": "^29.5.0"
+    "env-cmd": "^10.1.0"
   }
 }
