@@ -1,46 +1,56 @@
 const crypto = require('crypto');
-const fs = require('fs');
+const fs = require('fs').promises;
 const algorithm = 'aes-256-gcm';
 
+const SECRET_SALT = process.env.SECRET_SALT || "Secret Salt You Should Update"
 const SECRET_PASSPHRASE = process.env.SECRET_PASSPHRASE || "Secret Key You Should Update"
 
-const key = crypto.scryptSync(SECRET_PASSPHRASE, 'salt-is-what-ever-you-want', 32); // salt can be random, but in this case we are just using a string
-const iv = "123456789012";
+const secretKey = crypto.scryptSync(SECRET_PASSPHRASE, SECRET_SALT, 32); // salt can be random, but in this case we are just using a string
 
-function encryptFile(inputPath, outputPath) {
-    const cipher = crypto.createCipheriv(algorithm, key, iv);
+async function encryptFile(inputPath, key=secretKey) {
+  const iv = crypto.randomBytes(16);
+  const cipher = crypto.createCipheriv(algorithm, key, iv);
 
-    const input = fs.createReadStream(inputPath);
-    const output = fs.createWriteStream(outputPath);
+  const input = await fs.readFile(inputPath, 'utf8');
 
-    input.pipe(cipher).pipe(output);
+  const encrypted = Buffer.concat([cipher.update(input, 'utf8'), cipher.final()]);
+  const authTag = cipher.getAuthTag();
 
-    output.on('finish', function() {
-      console.log('Encrypted file written to disk!');
-      const authTagAsHex = cipher.getAuthTag().toString('hex'); // <-- can this be public
-      console.log(`Auth tag: ${authTagAsHex}`);
-    });
+  const result = {
+    iv: iv.toString('hex'),
+    auth_tag: authTag.toString('hex'),
+    data: encrypted.toString('base64'),
+  };
+
+  await fs.writeFile(`${inputPath}.secure`, JSON.stringify(result));
+
+  console.log(`Encrypted file written to ${inputPath}.secure!`);
 }
 
-function decryptFile(inputPath, outputPath, authTagAsHex) {
-  const decipher = crypto.createDecipheriv(algorithm, key, iv);
-  decipher.setAuthTag(Buffer.from(authTagAsHex, 'hex'));
+async function decryptToString(inputPath, key=secretKey) {
+  console.log(`Decrypting ${inputPath}...`);
+  const encryptedData = JSON.parse(await fs.readFile(inputPath, 'utf8'));
 
-  const input = fs.createReadStream(inputPath);
-  const output = fs.createWriteStream(outputPath);
+  const decipher = crypto.createDecipheriv(
+    algorithm,
+    key,
+    Buffer.from(encryptedData.iv, 'hex'),
+  );
 
-  input.pipe(decipher).pipe(output);
+  decipher.setAuthTag(Buffer.from(encryptedData.auth_tag, 'hex'));
 
-  output.on('finish', function() {
-    console.log('Decrypted file written to disk!');
-});
+  const decrypted = Buffer.concat([
+    decipher.update(Buffer.from(encryptedData.data, 'base64')),
+    decipher.final(),
+  ]);
+  return decrypted.toString('utf8');
 }
 
-// encryptFile('test.txt', 'test.encrypted');
+// await encryptFile('test.txt', 'test.encrypted');
 // decryptFile('test.encrypted', 'test.decrypted', 'iv.txt');
 
 
 module.exports = {
   encryptFile,
-  decryptFile
+  decryptToString
 }
