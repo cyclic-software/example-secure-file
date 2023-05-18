@@ -1,6 +1,6 @@
 # example-secure-file
 
-This repo provides two examples of how to securely store and retrieve a file
+This repo provides a few examples of how to securely store and retrieve a file
 using Nodejs and Cyclic.
 
 ## Getting Started
